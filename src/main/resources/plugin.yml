@@ -1,0 +1,11 @@
+name: PumpkinShooter
+version: '${project.version}'
+main: me.zwoosks.pumpkinshooter.PumpkinShooter
+api-version: 1.18
+author: zwoosks
+commands:
+  pumpkinShooter:
+    description: Main PumpkinShooter plugin command.
+    usage: /<command>
+    permission: pumpkinshooter.maincommand
+    aliases: [pshooter, pms]
