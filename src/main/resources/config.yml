@@ -5,6 +5,7 @@ messages:
   notOnline: "&c%givenName% &eis not online!"
   wait: "&eYou are still on delay. Wait &c%waitTime% more seconds &eplease!"
   throw: "&eYou have thrown a pumpkin!"
+  mustBePlayer: "&cYou cannot give yourself a Pumpkin Shooter, you are the console!"
 settings:
   item-id: NETHERITE_SWORD
   useDelayInSeconds: 10
@@ -14,3 +15,9 @@ settings:
   lore:
     - "&eThis is a pumpkin shooter"
     - "&eBe careful, it is a dangerous tool!"
+  holograms: false
+  timerIntervalTicks: 10
+  blocksTimerAboveItem: 1.5
+  hologramLines:
+    - "&6&lPumpkin"
+    - "&eIt will explode in &b&l%seconds% &eseconds!"

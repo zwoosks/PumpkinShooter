@@ -3,6 +3,7 @@ version: '${project.version}'
 main: me.zwoosks.pumpkinshooter.PumpkinShooter
 api-version: 1.18
 author: zwoosks
+softdepend: [DecentHolograms]
 commands:
   pumpkinShooter:
     description: Main PumpkinShooter plugin command.

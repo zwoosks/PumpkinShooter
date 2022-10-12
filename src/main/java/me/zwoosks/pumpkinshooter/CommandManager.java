@@ -1,6 +1,9 @@
 package me.zwoosks.pumpkinshooter;
 
+import eu.decentsoftware.holograms.api.DHAPI;
+import eu.decentsoftware.holograms.api.holograms.Hologram;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.command.Command;
@@ -26,13 +29,13 @@ public class CommandManager implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if(!(sender instanceof Player)) return false;
         if(args.length < 1) {
             sendMessage(sender, "messages.help");
         } else{
             if(args[0].equalsIgnoreCase("give")) {
                 if(sender.hasPermission("pumpkinshooter.give")) {
                     if(args.length == 1) {
+                        if(!(sender instanceof Player)) sendMessage(sender, "messages.mustBePlayer");
                         Player player = (Player) sender;
                         givePumpkinShooter(player);
                         sendMessage(sender, "messages.givenMessage", "%playerName%", player.getName());
