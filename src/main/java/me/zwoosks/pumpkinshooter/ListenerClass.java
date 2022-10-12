@@ -74,7 +74,7 @@ public class ListenerClass implements Listener {
             loc.getWorld().dropItem(loc, tempPumpkin);
             if(hologramsActive) {
                 Location holoLocation = null;
-                List<Entity> nearbyEntities = loc.getWorld().getNearbyEntities(loc, 10, 10, 10).stream().toList();
+                List<Entity> nearbyEntities = loc.getWorld().getNearbyEntities(loc, 2, 2, 2).stream().toList();
                 for(Entity entity : nearbyEntities) {
                     if(entity instanceof Item) {
                         holoLocation = entity.getLocation();
@@ -93,7 +93,7 @@ public class ListenerClass implements Listener {
                         if(localDuration <= 0) {
                             DHAPI.removeHologram(holoName);
                             durationList.remove(holoName);
-                            List<Entity> nearbyEntities = loc.getWorld().getNearbyEntities(loc, 10, 10, 10).stream().toList();
+                            List<Entity> nearbyEntities = loc.getWorld().getNearbyEntities(loc, 2, 2, 2).stream().toList();
                             for(Entity entity : nearbyEntities) {
                                 if(entity instanceof Item) {
                                     Location entityLoc = entity.getLocation();
@@ -117,7 +117,7 @@ public class ListenerClass implements Listener {
                 scheduler.scheduleSyncDelayedTask(plugin, new Runnable() {
                     @Override
                     public void run() {
-                        List<Entity> nearbyEntities = loc.getWorld().getNearbyEntities(loc, 10, 10, 10).stream().toList();
+                        List<Entity> nearbyEntities = loc.getWorld().getNearbyEntities(loc, 2, 2, 2).stream().toList();
                         for(Entity entity : nearbyEntities) {
                             if(entity instanceof Item) {
                                 Location entityLoc = entity.getLocation();
