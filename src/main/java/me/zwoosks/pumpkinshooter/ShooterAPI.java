@@ -14,10 +14,7 @@ public final class ShooterAPI {
         if(is.getType().toString().equalsIgnoreCase(itemType) && im != null) {
             PersistentDataContainer persistentData = im.getPersistentDataContainer();
             if(persistentData != null) {
-                if(persistentData.has(new NamespacedKey(plugin, "isShooter"), PersistentDataType.INTEGER)) {
-                    int isShooterInt = persistentData.get(new NamespacedKey(plugin, "isShooter"), PersistentDataType.INTEGER);
-                    return (isShooterInt == 1);
-                }
+                return persistentData.has(new NamespacedKey(plugin, "isShooter"), PersistentDataType.INTEGER);
             }
         }
         return false;

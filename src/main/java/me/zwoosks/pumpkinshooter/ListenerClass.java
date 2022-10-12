@@ -1,18 +1,19 @@
 package me.zwoosks.pumpkinshooter;
 
 import org.bukkit.*;
-import org.bukkit.block.Block;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.FallingBlock;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
-import org.bukkit.event.entity.ItemSpawnEvent;
+import org.bukkit.event.entity.EntityDropItemEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import java.util.*;
@@ -56,13 +57,65 @@ public class ListenerClass implements Listener {
     @EventHandler
     public void onPumpkinLand(EntityChangeBlockEvent e) {
         if(e.getTo() == Material.CARVED_PUMPKIN) {
+            e.setCancelled(true);
+            // todo Hologram with timer
+            ItemStack tempPumpkin = new ItemStack(Material.CARVED_PUMPKIN);
+            ItemMeta meta = tempPumpkin.getItemMeta();
+            PersistentDataContainer pdc = meta.getPersistentDataContainer();
+            pdc.set(new NamespacedKey(plugin, "pickablePumpkin"), PersistentDataType.INTEGER, 1);
+            tempPumpkin.setItemMeta(meta);
+            Location loc = e.getBlock().getLocation();
+            loc.getWorld().dropItem(loc, tempPumpkin);
             BukkitScheduler scheduler = plugin.getServer().getScheduler();
             scheduler.scheduleSyncDelayedTask(plugin, new Runnable() {
                 @Override
                 public void run() {
-                    Location location = e.getBlock().getLocation();
-                    Block block = location.getBlock();
-                    block.setType(Material.AIR);
+                    List<Entity> nearbyEntities = loc.getWorld().getNearbyEntities(loc, 10, 10, 10).stream().toList();
+                    for(Entity entity : nearbyEntities) {
+                        if(entity instanceof Item) entity.remove();
+                    }
+                    loc.getWorld().spawnParticle(Particle.EXPLOSION_HUGE, loc, 3);
+                    loc.getWorld().playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 1, 1);
+                }
+            }, plugin.getConfig().getInt("settings.secondsBeforePumpkinExplosion")*20L);
+        }
+    }
+
+    @EventHandler
+    public void onEntityPickupPumpkin(EntityPickupItemEvent e) { /* For players */
+        ItemStack is = e.getItem().getItemStack();
+        PersistentDataContainer pdc = is.getItemMeta().getPersistentDataContainer();
+        boolean cannotPick = false;
+        if(pdc != null) cannotPick = pdc.has(new NamespacedKey(plugin, "pickablePumpkin"), PersistentDataType.INTEGER);
+        e.setCancelled(cannotPick);
+    }
+
+    @EventHandler
+    public void onInventoryPickUpPumpkin(InventoryPickupItemEvent e) { /* For hoppers */
+        ItemStack is = e.getItem().getItemStack();
+        PersistentDataContainer pdc = is.getItemMeta().getPersistentDataContainer();
+        boolean cannotPick = false;
+        if(pdc != null) cannotPick = pdc.has(new NamespacedKey(plugin, "pickablePumpkin"), PersistentDataType.INTEGER);
+        e.setCancelled(cannotPick);
+    }
+
+    @EventHandler
+    public void onPumpkinSpawn(EntityDropItemEvent e) {
+        Entity entity = e.getEntity();
+        ItemStack is = e.getItemDrop().getItemStack();
+        if(is.getType() == Material.CARVED_PUMPKIN) {
+            // todo Put an hologram with timer
+            ItemMeta im = is.getItemMeta();
+            PersistentDataContainer pdc = im.getPersistentDataContainer();
+            pdc.set(new NamespacedKey(plugin, "pickablePumpkin"), PersistentDataType.INTEGER, 1);
+            is.setItemMeta(im);
+            e.getItemDrop().setItemStack(is);
+            BukkitScheduler scheduler = plugin.getServer().getScheduler();
+            scheduler.scheduleSyncDelayedTask(plugin, new Runnable() {
+                @Override
+                public void run() {
+                    Location location = e.getItemDrop().getLocation();
+                    e.getItemDrop().remove();
                     location.getWorld().spawnParticle(Particle.EXPLOSION_HUGE, location, 3);
                     location.getWorld().playSound(location, Sound.ENTITY_GENERIC_EXPLODE, 1, 1);
                 }

@@ -57,7 +57,7 @@ public class CommandManager implements CommandExecutor {
 
     private void givePumpkinShooter(Player player) {
         Material material = Material.getMaterial(plugin.getConfig().getString("settings.item-id"));
-        ItemStack is = new ItemStack(material, 1);
+        ItemStack is = new ItemStack(material);
         ItemMeta meta = is.getItemMeta();
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
         // value 1 means it is a custom pumpkin shooter
