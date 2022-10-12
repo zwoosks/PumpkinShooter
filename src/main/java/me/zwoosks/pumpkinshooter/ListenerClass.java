@@ -95,7 +95,7 @@ public class ListenerClass implements Listener {
                             durationList.remove(holoName);
                             List<Entity> nearbyEntities = loc.getWorld().getNearbyEntities(loc, 2, 2, 2).stream().toList();
                             for(Entity entity : nearbyEntities) {
-                                if(entity instanceof Item) {
+                                if(entity instanceof Item && ((Item) entity).getItemStack().getType() == Material.CARVED_PUMPKIN) {
                                     Location entityLoc = entity.getLocation();
                                     entityLoc.getWorld().spawnParticle(Particle.EXPLOSION_HUGE, entityLoc, 3);
                                     entityLoc.getWorld().playSound(entityLoc, Sound.ENTITY_GENERIC_EXPLODE, 1, 1);
@@ -119,7 +119,7 @@ public class ListenerClass implements Listener {
                     public void run() {
                         List<Entity> nearbyEntities = loc.getWorld().getNearbyEntities(loc, 2, 2, 2).stream().toList();
                         for(Entity entity : nearbyEntities) {
-                            if(entity instanceof Item) {
+                            if(entity instanceof Item && ((Item) entity).getItemStack().getType() == Material.CARVED_PUMPKIN) {
                                 Location entityLoc = entity.getLocation();
                                 entityLoc.getWorld().spawnParticle(Particle.EXPLOSION_HUGE, entityLoc, 3);
                                 entityLoc.getWorld().playSound(entityLoc, Sound.ENTITY_GENERIC_EXPLODE, 1, 1);
