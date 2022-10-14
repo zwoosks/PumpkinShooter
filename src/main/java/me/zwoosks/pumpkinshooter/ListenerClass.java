@@ -5,11 +5,13 @@ import eu.decentsoftware.holograms.api.holograms.Hologram;
 import org.bukkit.*;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDropItemEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
@@ -25,8 +27,11 @@ public class ListenerClass implements Listener {
 
     private PumpkinShooter plugin;
     private static HashMap<UUID, Long> dates = new HashMap<>();
+    private static List<FallingBlock> fallingBlocks = new ArrayList<>();
     private final double blocksTimerAboveItem;
     private final boolean hologramsActive;
+    private final boolean tracersActive;
+    private final int tracerTicksInterval;
     private int delaySeconds;
 
     public ListenerClass(PumpkinShooter plugin) {
@@ -35,6 +40,19 @@ public class ListenerClass implements Listener {
         this.ticksInterval = plugin.getConfig().getDouble("settings.timerIntervalTicks");
         this.blocksTimerAboveItem = plugin.getConfig().getDouble("settings.blocksTimerAboveItem");
         this.hologramsActive = plugin.getConfig().getBoolean("settings.holograms");
+        this.tracersActive = plugin.getConfig().getBoolean("settings.tracers");
+        this.tracerTicksInterval = plugin.getConfig().getInt("settings.tracersTicks");
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void antiGlitchDuplication(ItemSpawnEvent e) {
+        if(e.getEntity().getItemStack().getType() == Material.CARVED_PUMPKIN) {
+            ItemStack is = e.getEntity().getItemStack();
+            PersistentDataContainer pdc = is.getItemMeta().getPersistentDataContainer();
+            boolean containsPickable = false;
+            if(pdc != null) containsPickable = pdc.has(new NamespacedKey(plugin, "pickablePumpkin"), PersistentDataType.INTEGER);
+            e.setCancelled(!containsPickable);
+        }
     }
 
     @EventHandler
@@ -53,17 +71,41 @@ public class ListenerClass implements Listener {
                         return;
                     }
                     dates.put(player.getUniqueId(), System.currentTimeMillis());
-                    FallingBlock fb = player.getWorld().spawnFallingBlock(player.getLocation(), Material.CARVED_PUMPKIN, (byte) 0);
+                    FallingBlock fb = player.getWorld().spawnFallingBlock(player.getEyeLocation(), Material.CARVED_PUMPKIN, (byte) 0);
                     fb.setVelocity(player.getLocation().getDirection().multiply(plugin.getConfig().getDouble("settings.vectorMultiplier")));
                     sendMessage(player, "messages.throw");
+                    if(tracersActive) {
+                        double ofX, ofY, ofZ;
+                        ofX = plugin.getConfig().getDouble("settings.particleOffsetX");
+                        ofY = plugin.getConfig().getDouble("settings.particleOffsetY");
+                        ofZ = plugin.getConfig().getDouble("settings.particleOffsetZ");
+                        int particleCount = plugin.getConfig().getInt("settings.particleCount");
+                        int size = plugin.getConfig().getInt("settings.particleSize");
+                        int r, g, b;
+                        r = plugin.getConfig().getInt("settings.particleR");
+                        g = plugin.getConfig().getInt("settings.particleG");
+                        b = plugin.getConfig().getInt("settings.particleB");
+                        fallingBlocks.add(fb);
+                        new BukkitRunnable() {
+                            @Override
+                            public void run() {
+                                if(fb.isDead()) {
+                                    fallingBlocks.remove(fb);
+                                    cancel();
+                                }
+                                Particle.DustOptions dustOptions = new Particle.DustOptions(Color.fromRGB(r, g, b), size);
+                                fb.getWorld().spawnParticle(Particle.REDSTONE, fb.getLocation(), 2, ofX, ofY, ofZ, dustOptions);
+                            }
+                        }.runTaskTimer(plugin, 0L, tracerTicksInterval);
+                    }
                 }
             }
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onPumpkinLand(EntityChangeBlockEvent e) {
-        if(e.getTo() == Material.CARVED_PUMPKIN) {
+        if(e.getTo() == Material.CARVED_PUMPKIN && e.getEntity() instanceof FallingBlock) {
             e.setCancelled(true);
             ItemStack tempPumpkin = new ItemStack(Material.CARVED_PUMPKIN);
             ItemMeta meta = tempPumpkin.getItemMeta();
@@ -71,7 +113,7 @@ public class ListenerClass implements Listener {
             pdc.set(new NamespacedKey(plugin, "pickablePumpkin"), PersistentDataType.INTEGER, 1);
             tempPumpkin.setItemMeta(meta);
             Location loc = e.getBlock().getLocation();
-            loc.getWorld().dropItem(loc, tempPumpkin);
+            Item it = loc.getWorld().dropItem(loc, tempPumpkin);
             if(hologramsActive) {
                 Location holoLocation = null;
                 List<Entity> nearbyEntities = loc.getWorld().getNearbyEntities(loc, 2, 2, 2).stream().toList();
@@ -93,15 +135,10 @@ public class ListenerClass implements Listener {
                         if(localDuration <= 0) {
                             DHAPI.removeHologram(holoName);
                             durationList.remove(holoName);
-                            List<Entity> nearbyEntities = loc.getWorld().getNearbyEntities(loc, 2, 2, 2).stream().toList();
-                            for(Entity entity : nearbyEntities) {
-                                if(entity instanceof Item && ((Item) entity).getItemStack().getType() == Material.CARVED_PUMPKIN) {
-                                    Location entityLoc = entity.getLocation();
-                                    entityLoc.getWorld().spawnParticle(Particle.EXPLOSION_HUGE, entityLoc, 3);
-                                    entityLoc.getWorld().playSound(entityLoc, Sound.ENTITY_GENERIC_EXPLODE, 1, 1);
-                                    entity.remove();
-                                }
-                            }
+                            Location itemLocation = it.getLocation();
+                            itemLocation.getWorld().spawnParticle(Particle.EXPLOSION_HUGE, itemLocation, 3);
+                            itemLocation.getWorld().playSound(itemLocation, Sound.ENTITY_GENERIC_EXPLODE, 1, 1);
+                            it.remove();
                             cancel();
                         }
                         List<String> parsedLines = new ArrayList<String>();
@@ -109,6 +146,7 @@ public class ListenerClass implements Listener {
                             parsedLines.add(s.replace("%seconds%", String.valueOf(localDuration/20)));
                         }
                         DHAPI.setHologramLines(hologram, parsedLines);
+                        DHAPI.moveHologram(hologram, it.getLocation().add(0, blocksTimerAboveItem, 0));
                         durationList.put(holoName, localDuration - ticksInterval);
                     }
                 }.runTaskTimer(plugin, 0L, (long) ticksInterval);
@@ -117,15 +155,10 @@ public class ListenerClass implements Listener {
                 scheduler.scheduleSyncDelayedTask(plugin, new Runnable() {
                     @Override
                     public void run() {
-                        List<Entity> nearbyEntities = loc.getWorld().getNearbyEntities(loc, 2, 2, 2).stream().toList();
-                        for(Entity entity : nearbyEntities) {
-                            if(entity instanceof Item && ((Item) entity).getItemStack().getType() == Material.CARVED_PUMPKIN) {
-                                Location entityLoc = entity.getLocation();
-                                entityLoc.getWorld().spawnParticle(Particle.EXPLOSION_HUGE, entityLoc, 3);
-                                entityLoc.getWorld().playSound(entityLoc, Sound.ENTITY_GENERIC_EXPLODE, 1, 1);
-                                entity.remove();
-                            }
-                        }
+                        Location itemLocation = it.getLocation();
+                        itemLocation.getWorld().spawnParticle(Particle.EXPLOSION_HUGE, itemLocation, 3);
+                        itemLocation.getWorld().playSound(itemLocation, Sound.ENTITY_GENERIC_EXPLODE, 1, 1);
+                        it.remove();
                     }
                 }, plugin.getConfig().getInt("settings.secondsBeforePumpkinExplosion")*20L);
             }
@@ -150,7 +183,7 @@ public class ListenerClass implements Listener {
         e.setCancelled(cannotPick);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onPumpkinSpawn(EntityDropItemEvent e) {
         Entity entity = e.getEntity();
         ItemStack is = e.getItemDrop().getItemStack();

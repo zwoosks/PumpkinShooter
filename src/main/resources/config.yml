@@ -10,12 +10,22 @@ settings:
   item-id: NETHERITE_SWORD
   useDelayInSeconds: 10
   vectorMultiplier: 2
-  secondsBeforePumpkinExplosion: 3
+  secondsBeforePumpkinExplosion: 4
   displayName: "&c&lPumpkin Shooter"
   lore:
     - "&eThis is a pumpkin shooter"
     - "&eBe careful, it is a dangerous tool!"
-  holograms: false
+  holograms: true
+  tracers: true
+  tracersTicks: 2
+  particleCount: 2
+  particleOffsetX: 0.3
+  particleOffsetY: 0.3
+  particleOffsetZ: 0.3
+  particleSize: 3
+  particleR: 245
+  particleG: 159
+  particleB: 19
   timerIntervalTicks: 10
   blocksTimerAboveItem: 1.5
   hologramLines:
